@@ -67,3 +67,37 @@ void *malloc(size_t size)
     return (void*)(header + 1);
 }
 
+void free(void *block)
+{
+    if(!block) return;
+
+    pthread_mutex_lock(&global_malloc_lock);
+    header_t *header = (header_t*)block - 1;
+
+    header_t *program_break = sbrk(0);
+    if((char*)block + header->s.size == program_break)
+    {
+        if(head == tail)
+        {
+            head = tail = NULL;
+        }
+        else
+        {
+            header_t *tmp = head;
+            while(tmp)
+            {
+                if(tmp->s.next == tail)
+                {
+                    tmp->s.next = NULL;
+                    tail = tmp;
+                }
+            }
+        }
+        sbrk(0 - sizeof(header_t) - header->s.size);
+        pthread_mutex_unlock(&global_malloc_lock);
+        return;
+    }
+    header->s.is_free = 1;
+    pthread_mutex_unlock(&global_malloc_lock);
+}
+
