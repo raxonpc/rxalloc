@@ -92,6 +92,7 @@ void free(void *block)
                     tmp->s.next = NULL;
                     tail = tmp;
                 }
+                tmp = tmp->s.next;
             }
         }
         sbrk(0 - sizeof(header_t) - header->s.size);
@@ -115,5 +116,22 @@ void *calloc(size_t num, size_t nsize)
 
     memset(block, 0, size);
     return block;
+}
+
+void *realloc(void *block, size_t size)
+{
+    if(!block || !size) return malloc(size);
+
+    header_t *header = (header_t*)block - 1;
+    if(header->s.size >= size)
+            return block;
+
+    void *output = malloc(size);
+    if(output)
+    {
+        memcpy(output, block, header->s.size);
+        free(block);
+    }
+    return output;
 }
 
